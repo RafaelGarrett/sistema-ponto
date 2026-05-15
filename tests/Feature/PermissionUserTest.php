@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
 class PermissionUserTest extends TestCase
@@ -15,5 +16,38 @@ class PermissionUserTest extends TestCase
         $user->givePermissionTo('edit-articles');
         $this->assertTrue($user->hasPermissionTo('edit-articles'));
         $this->assertDatabaseHas('permissions', ['name' => 'edit-articles']);
+    }
+
+    /** @test */
+    public function it_should_be_able_to_authorize_access_to_a_route_based_on_the_permission(){
+
+        Route::get('test-something-weird', function() {
+            return 'test';
+        })->middleware('permission:edit-articles');
+
+        /** @var User $user */
+        $user = User::factory()->createOne();
+
+        $this->actingAs($user)->get('test-something-weird')
+            ->assertForbidden();
+
+        $user->givePermissionTo('edit-articles');
+        
+        $this->actingAs($user)
+            ->get('test-something-weird')
+            ->assertSuccessful();
+    }
+
+    /** @test */
+    public function it_should_be_able_to_use_policies_with_my_permissions()
+    {
+        /** @var User $user */
+        $user = User::factory()->createOne();
+
+        $this->assertFalse($user->can('edit-articles'));
+
+        $user->givePermissionTo('edit-articles');
+
+        $this->assertTrue($user->can('edit-articles'));
     }
 }
