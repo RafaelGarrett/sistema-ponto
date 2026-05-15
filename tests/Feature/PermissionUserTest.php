@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\User;
+use App\Models\Employee;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
 
@@ -44,10 +45,13 @@ class PermissionUserTest extends TestCase
         /** @var User $user */
         $user = User::factory()->createOne();
 
-        $this->assertFalse($user->can('edit-articles'));
+        $register = $user->employee()->first()->registers()->create([
+            'type' => 'ENTRADA',
+            'date_hour' => now(),
+        ]);
 
-        $user->givePermissionTo('edit-articles');
-
-        $this->assertTrue($user->can('edit-articles'));
+        $employee2 = Employee::factory()->createOne();
+        $this->actingAs($employee2->user)->delete(route('registers.destroy', $register))
+            ->assertForbidden();
     }
 }
